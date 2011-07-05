@@ -1,7 +1,7 @@
 from django.conf.urls.defaults import *
 
 
-urlpatterns = patterns('panomena.accounts.views',
+urlpatterns = patterns('panomena_accounts.views',
     url(r'^register/$', 'register', {}, 'accounts_register'),
     url(r'^profile/$', 'profile', {}, 'accounts_profile'),
     url(r'^profile/(?P<pk>\d+)/$', 'profile_display', {}, 'accounts_profile'),

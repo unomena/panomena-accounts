@@ -3,9 +3,9 @@ from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import AuthenticationForm
 
-from panomena.mobile.fields import MsisdnField
+from panomena_mobile.fields import MsisdnField
 
-from panomena.accounts.utils import get_profile_model
+from panomena_accounts.utils import get_profile_model
 
 
 class LoginForm(AuthenticationForm):
