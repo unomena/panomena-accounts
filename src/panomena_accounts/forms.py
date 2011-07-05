@@ -41,44 +41,37 @@ class BaseProfileForm(forms.Form):
     )
 
     def __init__(self, *args, **kwargs):
-        self.user = kwargs.pop('user', None)
-        initial = kwargs.pop('initial', {})
+        self.user = user = kwargs.pop('user', None)
         super(BaseProfileForm, self).__init__(*args, **kwargs)
-        if self.user:
-            initial = kwargs.pop('initial', {})
-            self.get_initial(**initial)
+        # setup intial values from instances
+        if user:
+            # attempt to get the profile for the user
+            profile_model = get_profile_model()
+            try:
+                profile = user.get_profile()
+            except profile_model.DoesNotExist:
+                profile = None
+            # update the initial values
+            self.initial.update(self.get_field_values(user))
+            self.initial.update(self.get_field_values(profile))
 
-    def get_initial(self, **kwargs):
-        """Gathers initial data into the form from the provided user and
-        it's attached profile.
-        
-        """
-        user = self.user
-        # attempt to get the profile for the user
-        profile_model = get_profile_model()
-        try:
-            profile = user.get_profile()
-        except profile_model.DoesNotExist:
-            profile = None
-        # iterate over fields fillng data found
-        initial = {}
-        for field in self.fields:
-            value = None
-            # skip excluded fields
-            if field in self.excluded_fields: continue
-            # extract data from user
-            if hasattr(user, field):
-                value = getattr(user, field)
-            # extract data from profile
-            if hasattr(profile, field):
-                value = getattr(profile, field)
-            # fill in data from provided initial
-            if kwargs.has_key(field):
-                value = kwargs[field]
-            if value: initial[field] = value
-        # return the collected data
-        self.initial = initial
-        return initial
+    def get_field_values(self, obj):
+        """Gathers field values from an object."""
+        values = {}
+        if issubclass(obj.__class__, dict):
+            # extract values from dictionary
+            for field in self.fields:
+                if field in self.excluded_fields: continue
+                if obj.has_key(field):
+                    values[field] = obj[field]
+        else:
+            # extract values from an object
+            for field in self.fields:
+                if field in self.excluded_fields: continue
+                if hasattr(obj, field):
+                    values[field] = getattr(obj, field)
+        # return the extracted values
+        return values
 
     def clean_username(self):
         """Check for unique username and clean value."""
