@@ -15,35 +15,51 @@ from panomena_accounts.utils import get_profile_model
 settings = SettingsFetcher('accounts')
 
 
-def register(request):
-    """Registration view that takes it's form from the ACCOUNT_REGISTER_FORM
-    setting and processes it.
+class RegisterView(object):
+    """Account registration view."""
 
-    """
-    register_form = settings.ACCOUNTS_REGISTER_FORM
-    register_form = class_from_string(register_form)
-    context = RequestContext(request)
-    # handle the form
-    if request.method == 'POST':
-        form = register_form(request.POST)
-        if form.is_valid():
-            form.save()
-            # authenticate and login user
-            data = form.cleaned_data
-            user = authenticate(
-                username=data['username'],
-                password=data['password']
-            )
-            auth_login(request, user)
-            # redirect appropriately
-            ajax = is_ajax_request(request)
-            url = settings.LOGIN_REDIRECT_URL
-            if ajax: return json_redirect(url)
-            return redirect(url)
-    else:
-        form = register_form()
-    context['form'] = form
-    return render_to_response('accounts/register.html', context)
+    def authenticate(self, data):
+        """Authenticate and return the user."""
+        user = authenticate(
+            username=data['username'],
+            password=data['password']
+        )
+        return user
+
+    def valid(self, request, form):
+        """Process a valid form."""
+        form.save()
+        # authenticate and login user
+        data = form.cleaned_data
+        user = self.authenticate(data)
+        auth_login(request, user)
+        # redirect appropriately
+        ajax = is_ajax_request(request)
+        url = settings.LOGIN_REDIRECT_URL
+        if ajax: response = json_redirect(url)
+        else: response = redirect(url)
+        # return the response
+        return response
+
+    def form(self):
+        """Returns the form to be used."""
+        return class_from_string(settings.ACCOUNTS_REGISTER_FORM)
+
+    def __call__(self, request):
+        """Basic form view mechanics."""
+        register_form = self.form()
+        context = RequestContext(request)
+        # handle the form
+        if request.method == 'POST':
+            form = register_form(request.POST)
+            if form.is_valid():
+                return self.valid(request, form)
+        else:
+            form = register_form()
+        context['form'] = form
+        return render_to_response('accounts/register.html', context)
+
+register = RegisterView()
 
 
 @login_required
