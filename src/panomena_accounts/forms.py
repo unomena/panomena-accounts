@@ -54,9 +54,11 @@ class BaseProfileForm(forms.Form):
             # update the initial values
             self.initial.update(self.get_field_values(user))
             self.initial.update(self.get_field_values(profile))
-        # apply field order if specified
-        if hasattr(self.Meta, 'field_order'):
-            self.fields.keyOrder = self.Meta.field_order
+        # use meta specifications
+        if hasattr(self, 'Meta'):
+            # apply field order if specified
+            if hasattr(self.Meta, 'field_order'):
+                self.fields.keyOrder = self.Meta.field_order
 
     def get_field_values(self, obj):
         """Gathers field values from an object."""
