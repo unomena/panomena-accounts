@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 
 from panomena_general.utils import class_from_string, json_redirect, \
-    SettingsFetcher, is_ajax_request
+    SettingsFetcher, is_ajax_request, ajax_redirect
 
 from panomena_accounts.forms import AvatarForm, ForgotSMSForm
 from panomena_accounts.utils import get_profile_model
@@ -34,12 +34,8 @@ class RegisterView(object):
         user = self.authenticate(data)
         auth_login(request, user)
         # redirect appropriately
-        ajax = is_ajax_request(request)
         url = settings.LOGIN_REDIRECT_URL
-        if ajax: response = json_redirect(url)
-        else: response = redirect(url)
-        # return the response
-        return response
+        return ajax_redirect(request, url)
 
     def form(self):
         """Returns the form to be used."""
@@ -110,9 +106,7 @@ def login(request, template):
                 return redirect(next_url)
             # redirect to url indicated in settings
             url = settings.LOGIN_REDIRECT_URL
-            ajax = is_ajax_request(request)
-            if ajax: return json_redirect(url)
-            else: return redirect(url)
+            return ajax_redirect(request, url)
     else:
         form = login_form(request)
         # todo: check for session middleware
