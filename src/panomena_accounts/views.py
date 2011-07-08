@@ -5,8 +5,8 @@ from django.contrib.auth.views import logout as auth_logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 
-from panomena_general.utils import class_from_string, json_redirect, \
-    SettingsFetcher, is_ajax_request, ajax_redirect
+from panomena_general.utils import class_from_string, SettingsFetcher, \
+    ajax_redirect
 
 from panomena_accounts.forms import AvatarForm, ForgotSMSForm
 from panomena_accounts.utils import get_profile_model
