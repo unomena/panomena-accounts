@@ -47,11 +47,11 @@ class RegisterView(object):
         context = RequestContext(request)
         # handle the form
         if request.method == 'POST':
-            form = register_form(request.POST)
+            form = register_form(request, request.POST)
             if form.is_valid():
                 return self.valid(request, form)
         else:
-            form = register_form()
+            form = register_form(request)
         context['form'] = form
         return render_to_response('accounts/register.html', context)
 
@@ -67,11 +67,11 @@ def profile(request, id=None):
     user = request.user
     context = RequestContext(request)
     if request.method == 'POST':
-        form = profile_form(request.POST, user=user)
+        form = profile_form(request, request.POST, user=user)
         if form.is_valid():
             form.save()
     else:
-        form = profile_form(user=user)
+        form = profile_form(request, user=user)
     context['form'] = form
     return render_to_response('accounts/profile.html', context)
 

@@ -8,24 +8,36 @@ from panomena_mobile.fields import MsisdnField
 from panomena_accounts.utils import get_profile_model
 
 
+NEXT_FIELD = forms.CharField(
+    required=False,
+    widget=forms.widgets.HiddenInput
+)
+
+
+def next_to_initial(kwargs, request):
+    """Add the 'next' parameter to the initial values of the form
+    if provided in the request parameters.
+
+    """
+    next = request.REQUEST.get('next', None)
+    if next:
+        initial = kwargs.get('initial', {})
+        initial['next'] = next
+        kwargs['initial'] = initial
+    return kwargs
+
+
+
 class LoginForm(AuthenticationForm):
     """Generic lgoin form base on django auth login form, but handles
     'next' parameter as a field.
 
     """
 
-    next = forms.CharField(
-        required=False,
-        widget=forms.widgets.HiddenInput
-    )
+    next = NEXT_FIELD
 
     def __init__(self, request, *args, **kwargs):
-        # set the 'next' field if value found in request
-        next = request.REQUEST.get('next', None)
-        if next:
-            initial = kwargs.get('initial', {})
-            initial['next'] = next
-            kwargs['initial'] = initial
+        kwargs = next_to_initial(kwargs, request)
         # run the super method
         super(LoginForm, self).__init__(request, *args, **kwargs)
 
@@ -35,12 +47,16 @@ class BaseProfileForm(forms.Form):
     setting and saving both the user and it's attached profile object.
 
     """
+
+    next = NEXT_FIELD
+
     excluded_fields = (
         'password',
         'confirm_password',
     )
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, request, *args, **kwargs):
+        kwargs = next_to_initial(kwargs, request)
         self.user = user = kwargs.pop('user', None)
         super(BaseProfileForm, self).__init__(*args, **kwargs)
         # setup intial values from instances
