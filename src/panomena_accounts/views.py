@@ -53,7 +53,10 @@ class RegisterView(object):
                 return self.valid(request, form)
         else:
             form = register_form(request)
-        context['form'] = form
+        context = RequestContext(request, {
+            'title': 'Register',
+            'form': form,
+        })
         return render_to_response('accounts/register.html', context)
 
 register = RegisterView()
@@ -73,7 +76,10 @@ def profile(request, id=None):
             form.save()
     else:
         form = profile_form(request, user=user)
-    context['form'] = form
+    context = RequestContext(request, {
+        'title': 'Profile',
+        'form': form,
+    })
     return render_to_response('accounts/profile.html', context)
 
 
@@ -88,7 +94,6 @@ def login(request, template):
     """Login view for users."""
     login_form = settings.ACCOUNTS_LOGIN_FORM
     login_form = class_from_string(login_form)
-    context = RequestContext(request)
     if request.method == 'POST':
         form = login_form(request, request.POST)
         if form.is_valid():
@@ -112,8 +117,12 @@ def login(request, template):
         form = login_form(request)
         # todo: check for session middleware
         request.session.set_test_cookie()
-    context['form'] = form
-    context['next'] = request.GET.get('next', None)
+    # build context and render template
+    context = RequestContext(request, {
+        'title': 'Login',
+        'form': form,
+        'next': request.GET.get('next', None),
+    })
     return render_to_response(template, context)
 
 
@@ -127,7 +136,10 @@ def avatar(request):
             form.save()
     else:
         form = AvatarForm(user)
-    context = RequestContext(request, {'form': form})
+    context = RequestContext(request, {
+        'title': 'Avatar',
+        'form': form,
+    })
     return render_to_response('accounts/avatar.html', context)
 
 
