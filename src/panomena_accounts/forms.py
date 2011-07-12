@@ -1,12 +1,23 @@
+import functools
+
 from django import forms
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import AuthenticationForm
 
 from panomena_mobile.fields import MsisdnField
+from panomena_general.utils import formfield_extractor
 
 from panomena_accounts.utils import get_profile_model
 
+
+USER_FIELDS = formfield_extractor(User, {})
+
+PASSWORD_FIELD = functools.partial(forms.CharField,
+    required=True,
+    max_length=64,
+    widget=forms.widgets.PasswordInput(),
+)
 
 NEXT_FIELD = forms.CharField(
     required=False,
@@ -180,6 +191,41 @@ class AvatarForm(forms.Form):
         except profile_model.DoesNotExist:
             pass
         return user
+
+class ForgotForm(forms.Form):
+    """Forgotten password form."""
+
+    username = USER_FIELDS['username']()
+
+    def __init__(self, request, *args, **kwargs):
+        if request.method == 'POST':
+            super(ForgotForm, self).__init__(request.POST, *args, **kwargs)
+            if self.valid(): self.action()
+        else:
+            super(ForgotForm, self).__init__(*args, **kwargs)
+
+    def action(self):
+        """Sends an email to the user with a link to change their password."""
+        print self.cleaned_data
+
+
+class ResetForm(forms.Form):
+    """Reset password form."""
+
+    old_password = PASSWORD_FIELD(label=_('Old Password'))
+    new_password = PASSWORD_FIELD(label=_('New Password'))
+    confirm_password = PASSWORD_FIELD(label=_('Confirm New Password'))
+
+    def __init__(self, request, *args, **kwargs):
+        if request.method == 'POST':
+            super(ResetForm, self).__init__(request.POST, *args, **kwargs)
+            if self.valid(): self.action()
+        else:
+            super(ResetForm, self).__init__(*args, **kwargs)
+
+    def action(self):
+        """Reset the user's password."""
+        print self.cleaned_data
 
 
 class ForgotSMSForm(forms.Form):

@@ -8,7 +8,8 @@ from django.contrib.auth.decorators import login_required
 from panomena_general.utils import class_from_string, SettingsFetcher, \
     ajax_redirect
 
-from panomena_accounts.forms import AvatarForm, ForgotSMSForm
+from panomena_accounts.forms import AvatarForm, ForgotForm, ResetForm, \
+    ForgotSMSForm
 from panomena_accounts.utils import get_profile_model
 
 
@@ -140,6 +141,20 @@ def avatar_clear(request):
     except profile_model.DoesNotExist:
         pass
     return redirect('accounts_avatar')
+
+
+def forgot(request, template):
+    """View for retrieving a forgotten password."""
+    form = ForgotForm(request)
+    context = RequestContext(request, {'form': form})
+    return render_to_response(template, context)
+
+
+def reset(request):
+    """View for resetting a user password."""
+    form = ResetForm(request)
+    context = RequestContext(request, {'form': form})
+    return render_to_response('accounts/reset.html', context)
 
 
 def logout(request):
