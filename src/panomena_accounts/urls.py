@@ -25,7 +25,7 @@ urlpatterns = patterns('panomena_accounts.views',
         {'template': 'accounts/forgot_form.html'},
         'accounts_forgot_form'
     ),
-    url(r'^reset/$', 'reset', {}, 'accounts_reset'),
+    url(r'^reset/(?P<reset_uuid>[\w\-\+_]+)/$', 'reset', {}, 'accounts_reset'),
     url(r'^logout/$', 'logout', {}, 'accounts_logout'),
     url(r'^forgot/sms/$', 'forgot_sms', {}, 'accounts_forgot_sms'),
     url(r'^avatar/$', 'avatar', {}, 'accounts_avatar'),

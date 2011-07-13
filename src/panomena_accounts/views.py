@@ -11,6 +11,7 @@ from panomena_general.utils import class_from_string, SettingsFetcher, \
 from panomena_accounts.forms import AvatarForm, ForgotForm, ResetForm, \
     ForgotSMSForm
 from panomena_accounts.utils import get_profile_model
+from panomena_accounts.exceptions import PasswordResetFieldException
 
 
 settings = SettingsFetcher('accounts')
@@ -162,10 +163,37 @@ def forgot(request, template):
     return render_to_response(template, context)
 
 
-def reset(request):
+def reset(request, reset_uuid):
     """View for resetting a user password."""
-    form = ResetForm(request)
-    context = RequestContext(request, {'form': form})
+    profile_model = get_profile_model()
+    profile = None
+    # validate the provided uuid
+    try:
+        profile = profile_model.objects.get(password_reset=reset_uuid)
+        # check if the profile model has the password reset field
+        if not hasattr(profile, 'password_reset'):
+            raise PasswordResetFieldException()
+        authenticated = True
+    except profile_model.DoesNotExist:
+        authenticated = False
+    # handle the form
+    if request.method == 'POST' and profile:
+        form = ResetForm(request.POST)
+        if form.is_valid():
+            data = form.cleaned_data
+            # set the user's password
+            profile.user.set_password(data['password'])
+            profile.user.save()
+            # nullify the reset identifier to disable the old link
+            profile.password_reset = None
+            profile.save()
+    else:
+        form = ResetForm()
+    # build context and render
+    context = RequestContext(request, {
+        'form': form,
+        'authenticated': authenticated,
+    })
     return render_to_response('accounts/reset.html', context)
 
 

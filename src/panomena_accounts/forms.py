@@ -1,14 +1,21 @@
+import uuid
 import functools
 
 from django import forms
+from django.conf import settings
+from django.core import mail
+from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import AuthenticationForm
+from django.template.loader import render_to_string
 
 from panomena_mobile.fields import MsisdnField
 from panomena_general.utils import formfield_extractor
+from panomena_general.exceptions import ProfileRequiredException
 
 from panomena_accounts.utils import get_profile_model
+from panomena_accounts.exceptions import PasswordResetFieldException
 
 
 USER_FIELDS = formfield_extractor(User, {})
@@ -192,40 +199,79 @@ class AvatarForm(forms.Form):
             pass
         return user
 
+
 class ForgotForm(forms.Form):
     """Forgotten password form."""
 
-    username = USER_FIELDS['username']()
+    username = USER_FIELDS['username'](help_text=None)
 
     def __init__(self, request, *args, **kwargs):
         if request.method == 'POST':
             super(ForgotForm, self).__init__(request.POST, *args, **kwargs)
-            if self.valid(): self.action()
+            if self.is_valid(): self.action(request)
         else:
             super(ForgotForm, self).__init__(*args, **kwargs)
 
-    def action(self):
+    def clean(self):
+        """Clean form data and perform non field validation."""
+        data = self.cleaned_data
+        try:
+            self.user = User.objects.get(username=data['username'])
+        except User.DoesNotExist:
+            raise forms.ValidationError(_('A user with the given username ' \
+                'was not found.'))
+        return data
+
+    def action(self, request):
         """Sends an email to the user with a link to change their password."""
-        print self.cleaned_data
+        user = self.user
+        profile_model = get_profile_model()
+        # attempt to retrieve the user's profile
+        try:
+            profile = user.get_profile()
+        except profile_model.DoesNotExist:
+            raise ProfileRequiredException('password reset request')
+        # attempt to set the password reset field
+        reset_uuid = uuid.uuid4()
+        if hasattr(profile, 'password_reset'):
+            profile.password_reset = reset_uuid
+            profile.save()
+        else:
+            raise PasswordResetFieldException()
+        # generate the link to send in the email
+        url = reverse('accounts_reset', args=[reset_uuid])
+        url = request.build_absolute_uri(url)
+        # build the context for email message template rendering
+        context = {'user': user, 'url': url}
+        # send rendered messages to managers
+        text_content = render_to_string('accounts/forgot_email.txt', context)
+        html_content = render_to_string('accounts/forgot_email.html', context)
+        message = mail.EmailMultiAlternatives(
+            'Password Reset Request', text_content,
+            settings.DEFAULT_FROM_EMAIL, [user.email]
+        )
+        message.attach_alternative(html_content, 'text/html')
+        message.send()
+        # return success
+        return True
 
 
 class ResetForm(forms.Form):
     """Reset password form."""
 
-    old_password = PASSWORD_FIELD(label=_('Old Password'))
-    new_password = PASSWORD_FIELD(label=_('New Password'))
-    confirm_password = PASSWORD_FIELD(label=_('Confirm New Password'))
+    password = PASSWORD_FIELD()
+    confirm_password = PASSWORD_FIELD(label=_('Confirm Password'))
 
-    def __init__(self, request, *args, **kwargs):
-        if request.method == 'POST':
-            super(ResetForm, self).__init__(request.POST, *args, **kwargs)
-            if self.valid(): self.action()
-        else:
-            super(ResetForm, self).__init__(*args, **kwargs)
-
-    def action(self):
-        """Reset the user's password."""
-        print self.cleaned_data
+    def clean(self):
+        """Check for non field errors and clean data."""
+        cleaned_data = self.cleaned_data
+        # check that provided passwords match
+        password = cleaned_data.get('password', '')
+        confirm_password = cleaned_data.get('confirm_password', '')
+        if password != confirm_password:
+            raise forms.ValidationError(_("Passwords don't match."))
+        # return the cleaned data
+        return cleaned_data
 
 
 class ForgotSMSForm(forms.Form):
