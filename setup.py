@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(
     name='panomena-accounts',
     description='Panomena Accounts',
-    version='0.0.1',
+    version='0.0.2',
     author='',
     license='Proprietory',
     url='http://www.unomena.com/',

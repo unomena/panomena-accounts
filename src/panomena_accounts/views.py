@@ -91,40 +91,48 @@ def profile_display(request, pk):
     return render_to_response('accounts/profile_display.html', context)
 
 
-def login(request, template):
-    """Login view for users."""
-    login_form = settings.ACCOUNTS_LOGIN_FORM
-    login_form = class_from_string(login_form)
-    if request.method == 'POST':
-        form = login_form(request, request.POST)
-        if form.is_valid():
-            # authenticate and login user
-            data = form.cleaned_data
-            # todo: if form is based on django auth form then this step can be removed
-            user = authenticate(
-                username=data['username'],
-                password=data['password'],
-            )
-            auth_login(request, user)
-            # redirect to next url if available
-            # todo: check that form is base on LoginForm
-            next_url = data.get('next', '')
-            if len(next_url) > 0:
-                return redirect(next_url)
-            # redirect to url indicated in settings
-            url = settings.LOGIN_REDIRECT_URL
-            return ajax_redirect(request, url)
-    else:
-        form = login_form(request)
-        # todo: check for session middleware
-        request.session.set_test_cookie()
-    # build context and render template
-    context = RequestContext(request, {
-        'title': 'Login',
-        'form': form,
-        'next': request.GET.get('next', None),
-    })
-    return render_to_response(template, context)
+class LoginView(object):
+    """Account login view."""
+
+    def valid(self, request, form):
+        """Process a valid form."""
+        # authenticate and login user
+        data = form.cleaned_data
+        # todo: if form is based on django auth form then this step can be removed
+        user = authenticate(
+            username=data['username'],
+            password=data['password'],
+        )
+        auth_login(request, user)
+        # redirect to next url if available
+        # todo: check that form is base on LoginForm
+        next_url = data.get('next', '')
+        if len(next_url) > 0:
+            return redirect(next_url)
+        # redirect to url indicated in settings
+        url = settings.LOGIN_REDIRECT_URL
+        return ajax_redirect(request, url)
+
+    def __call__(self, request):
+        login_form = settings.ACCOUNTS_LOGIN_FORM
+        login_form = class_from_string(login_form)
+        if request.method == 'POST':
+            form = login_form(request, request.POST)
+            if form.is_valid():
+                return self.valid(request, form)
+        else:
+            form = login_form(request)
+            # todo: check for session middleware
+            request.session.set_test_cookie()
+        # build context and render template
+        context = RequestContext(request, {
+            'title': 'Login',
+            'form': form,
+            'next': request.GET.get('next', None),
+        })
+        return render_to_response('accounts/login.html', context)
+
+login = LoginView()
 
 
 @login_required
