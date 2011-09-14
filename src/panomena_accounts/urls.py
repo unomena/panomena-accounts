@@ -5,7 +5,7 @@ urlpatterns = patterns('panomena_accounts.views',
     url(r'^register/$', 'register', {}, 'accounts_register'),
     url(r'^profile/$', 'profile', {}, 'accounts_profile'),
     url(r'^profile/(?P<pk>\d+)/$', 'profile_display', {}, 'accounts_profile'),
-    url(r'^login/$', 'login', 'accounts_login'),
+    url(r'^login/$', 'login', {}, 'accounts_login'),
     url(
         r'^login_form/$', 'login',
         {'template': 'accounts/login_form.html'},
