@@ -113,7 +113,7 @@ class LoginView(object):
         url = settings.LOGIN_REDIRECT_URL
         return ajax_redirect(request, url)
 
-    def __call__(self, request):
+    def __call__(self, request, template='accounts/login.html'):
         login_form = settings.ACCOUNTS_LOGIN_FORM
         login_form = class_from_string(login_form)
         if request.method == 'POST':
@@ -130,7 +130,7 @@ class LoginView(object):
             'form': form,
             'next': request.GET.get('next', None),
         })
-        return render_to_response('accounts/login.html', context)
+        return render_to_response(template, context)
 
 login = LoginView()
 
