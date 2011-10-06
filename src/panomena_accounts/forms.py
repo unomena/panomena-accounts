@@ -86,15 +86,15 @@ class BaseProfileForm(forms.Form):
             except profile_model.DoesNotExist:
                 profile = None
             # update the initial values
-            self.initial.update(self.get_field_values(user))
-            self.initial.update(self.get_field_values(profile))
+            self.update_field_values(user)
+            self.update_field_values(profile)
         # use meta specifications
         if hasattr(self, 'Meta'):
             # apply field order if specified
             if hasattr(self.Meta, 'field_order'):
                 self.fields.keyOrder = self.Meta.field_order
 
-    def get_field_values(self, obj):
+    def update_field_values(self, obj):
         """Gathers field values from an object."""
         values = {}
         if issubclass(obj.__class__, dict):
@@ -109,8 +109,10 @@ class BaseProfileForm(forms.Form):
                 if field in self.excluded_fields: continue
                 if hasattr(obj, field):
                     values[field] = getattr(obj, field)
-        # return the extracted values
-        return values
+        # update using the extracted values
+        self.initial.update(values)
+        if self.data.__class__ == dict:
+            self.data.update(values)
 
     def clean_username(self):
         """Check for unique username and clean value."""
