@@ -16,6 +16,6 @@ setup(
     install_requires = [
         'Django',
         'panomena-general==0.0.3',
-        'panomena-mobile==0.0.2',
+        'panomena-mobile==0.0.3',
     ],
 )
